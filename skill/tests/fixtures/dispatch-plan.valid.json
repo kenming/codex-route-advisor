@@ -1,0 +1,107 @@
+{
+  "version": 1,
+  "taskSummary": "Implement a product list and validate it",
+  "assessmentMode": "mixed",
+  "executionOrder": [
+    "T1",
+    "T2",
+    "T3"
+  ],
+  "parallelGroups": [],
+  "tasks": [
+    {
+      "id": "T1",
+      "goal": "Implement the product-list UI",
+      "context": {
+        "surface": "product-list"
+      },
+      "dependsOn": [],
+      "deliverable": "Working product-list UI",
+      "acceptance": [
+        "Required states render"
+      ],
+      "conditional": false,
+      "boundaryReason": "Implementation has its own deliverable and code validation loop",
+      "assessment": {
+        "source": "jev",
+        "confidence": 0.88,
+        "taskComplexity": 0.55,
+        "reasoningRequired": 0.5,
+        "toolComplexity": 0.42
+      },
+      "recommendation": {
+        "tier": "balanced",
+        "effort": "medium",
+        "model": "sol"
+      },
+      "tools": [
+        "code-edit",
+        "unit-test"
+      ],
+      "rationale": "Routine implementation with bounded UI decisions"
+    },
+    {
+      "id": "T2",
+      "goal": "Validate the product-list UI with Playwright",
+      "context": {
+        "target": "product-list"
+      },
+      "dependsOn": [
+        "T1"
+      ],
+      "deliverable": "Recorded validation result",
+      "acceptance": [
+        "Target scenarios execute",
+        "Console failures are recorded"
+      ],
+      "conditional": false,
+      "boundaryReason": "Browser validation uses a distinct primary tool and acceptance gate",
+      "assessment": {
+        "source": "agent",
+        "confidence": 0.92
+      },
+      "recommendation": {
+        "tier": "fast",
+        "effort": "high"
+      },
+      "tools": [
+        "playwright-cli"
+      ],
+      "rationale": "Focused deterministic browser validation"
+    },
+    {
+      "id": "T3",
+      "goal": "Diagnose and fix validation failures",
+      "context": {
+        "input": "T2 validation output"
+      },
+      "dependsOn": [
+        "T2"
+      ],
+      "deliverable": "Root cause fixed and failed validation re-run",
+      "acceptance": [
+        "Failure cause is identified",
+        "Affected validation passes"
+      ],
+      "conditional": {
+        "taskId": "T2",
+        "outcome": "failure"
+      },
+      "boundaryReason": "Unknown failure diagnosis requires a stronger reasoning boundary",
+      "assessment": {
+        "source": "agent",
+        "confidence": 0.8
+      },
+      "recommendation": {
+        "tier": "strong",
+        "effort": "high"
+      },
+      "tools": [
+        "code-edit",
+        "playwright-cli"
+      ],
+      "rationale": "Unknown-cause diagnosis may cross implementation and runtime behavior"
+    }
+  ],
+  "executionMode": "confirm"
+}

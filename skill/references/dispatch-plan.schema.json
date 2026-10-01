@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://codex-route-advisor.local/dispatch-plan.schema.json",
+  "title": "Codex Route Advisor Dispatch Plan",
+  "type": "object",
+  "required": [
+    "version",
+    "taskSummary",
+    "executionMode",
+    "assessmentMode",
+    "executionOrder",
+    "parallelGroups",
+    "tasks"
+  ],
+  "properties": {
+    "version": { "const": 1 },
+    "taskSummary": { "type": "string", "minLength": 1 },
+    "executionMode": { "enum": ["plan", "confirm", "auto"] },
+    "assessmentMode": { "enum": ["jev", "agent", "mixed"] },
+    "executionOrder": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "type": "string", "pattern": "^T[1-9][0-9]*$" }
+    },
+    "parallelGroups": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "uniqueItems": true,
+        "items": { "type": "string", "pattern": "^T[1-9][0-9]*$" }
+      }
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/planTask" }
+    }
+  },
+  "$defs": {
+    "conditional": {
+      "oneOf": [
+        { "const": false },
+        {
+          "type": "object",
+          "required": ["taskId", "outcome"],
+          "properties": {
+            "taskId": { "type": "string", "pattern": "^T[1-9][0-9]*$" },
+            "outcome": { "enum": ["success", "failure"] }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "planTask": {
+      "type": "object",
+      "required": [
+        "id",
+        "goal",
+        "context",
+        "dependsOn",
+        "deliverable",
+        "acceptance",
+        "conditional",
+        "boundaryReason",
+        "assessment",
+        "recommendation",
+        "tools",
+        "rationale"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^T[1-9][0-9]*$" },
+        "goal": { "type": "string", "minLength": 1 },
+        "context": { "type": "object" },
+        "dependsOn": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^T[1-9][0-9]*$" }
+        },
+        "deliverable": { "type": "string", "minLength": 1 },
+        "acceptance": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "conditional": { "$ref": "#/$defs/conditional" },
+        "boundaryReason": { "type": "string", "minLength": 1 },
+        "assessment": {
+          "type": "object",
+          "required": ["source", "confidence"],
+          "properties": {
+            "source": { "enum": ["jev", "agent"] },
+            "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+            "taskComplexity": { "type": "number", "minimum": 0, "maximum": 1 },
+            "reasoningRequired": { "type": "number", "minimum": 0, "maximum": 1 },
+            "toolComplexity": { "type": "number", "minimum": 0, "maximum": 1 },
+            "fallback": {
+              "type": "object",
+              "required": ["from", "reason"],
+              "properties": {
+                "from": { "const": "jev" },
+                "reason": { "type": "string", "minLength": 1 }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "recommendation": {
+          "type": "object",
+          "required": ["tier", "effort"],
+          "properties": {
+            "tier": { "enum": ["fast", "balanced", "strong", "long"] },
+            "effort": { "enum": ["low", "medium", "high", "xhigh", "max"] },
+            "model": { "type": "string", "minLength": 1 },
+            "preferredModel": { "type": "string", "minLength": 1 },
+            "preferredEffort": { "enum": ["low", "medium", "high", "xhigh", "max"] },
+            "constraint": { "const": "model_escalation_disabled" }
+          },
+          "additionalProperties": false
+        },
+        "tools": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "rationale": { "type": "string", "minLength": 1 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,94 @@
+{
+  "task": "Implement a product-list UI, validate it with Playwright, and diagnose failures only if validation fails.",
+  "routerPreference": {
+    "backend": "model"
+  },
+  "coordinatorProfile": {
+    "model": "sol",
+    "effort": "xhigh"
+  },
+  "boundedTasks": [
+    {
+      "id": "T1",
+      "goal": "Implement the product-list UI",
+      "context": {
+        "scope": "existing frontend"
+      },
+      "dependsOn": [],
+      "deliverable": "Working product-list UI",
+      "acceptance": [
+        "UI renders the required product list behavior"
+      ],
+      "conditional": false,
+      "boundaryReason": "Implementation is one bounded engineering cycle"
+    },
+    {
+      "id": "T2",
+      "goal": "Validate the product-list UI with Playwright",
+      "context": {
+        "validation": "browser"
+      },
+      "dependsOn": [
+        "T1"
+      ],
+      "deliverable": "Browser validation result",
+      "acceptance": [
+        "Playwright validation completes with observable evidence"
+      ],
+      "conditional": false,
+      "boundaryReason": "Browser validation uses a distinct tool and acceptance gate"
+    },
+    {
+      "id": "T3",
+      "goal": "Diagnose and fix validation failures",
+      "context": {
+        "trigger": "Playwright validation failure"
+      },
+      "dependsOn": [
+        "T2"
+      ],
+      "deliverable": "Root-cause fix for the observed validation failure",
+      "acceptance": [
+        "Observed failure is explained and the focused validation passes"
+      ],
+      "conditional": {
+        "taskId": "T2",
+        "outcome": "failure"
+      },
+      "boundaryReason": "Unknown failure diagnosis is conditional and reasoning-heavy"
+    }
+  ],
+  "assessments": {
+    "T1": {
+      "agent": {
+        "tier": "balanced",
+        "confidence": 0.9,
+        "reason": "Ordinary bounded UI implementation"
+      },
+      "tools": [
+        "code-edit"
+      ]
+    },
+    "T2": {
+      "agent": {
+        "tier": "fast",
+        "confidence": 0.92,
+        "reason": "Deterministic browser validation against explicit acceptance criteria"
+      },
+      "tools": [
+        "playwright"
+      ]
+    },
+    "T3": {
+      "agent": {
+        "tier": "strong",
+        "confidence": 0.9,
+        "reason": "Unknown validation failure requires root-cause diagnosis"
+      },
+      "tools": [
+        "playwright",
+        "code-edit"
+      ]
+    }
+  }
+}

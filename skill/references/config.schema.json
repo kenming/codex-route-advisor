@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://codex-route-advisor.local/config.schema.json",
+  "title": "Codex Route Advisor Config",
+  "type": "object",
+  "required": ["schemaVersion"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "executionMode": {
+      "enum": ["plan", "confirm", "auto"]
+    },
+    "allowModelEscalation": {
+      "type": "boolean"
+    },
+    "router": {
+      "type": "object",
+      "properties": {
+        "backend": {
+          "enum": ["auto", "jev", "model"]
+        },
+        "prefer": {
+          "enum": ["jev", "model"]
+        }
+      },
+      "additionalProperties": true
+    },
+    "routing": {
+      "type": "object",
+      "properties": {
+        "fast": { "$ref": "#/$defs/tierOverride" },
+        "balanced": { "$ref": "#/$defs/tierOverride" },
+        "strong": { "$ref": "#/$defs/tierOverride" },
+        "long": { "$ref": "#/$defs/tierOverride" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "tierOverride": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effort": {
+          "enum": ["low", "medium", "high", "xhigh", "max"]
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}
