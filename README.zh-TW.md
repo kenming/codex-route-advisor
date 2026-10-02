@@ -528,15 +528,7 @@ Get-Content .agents\skills\codex-route-advisor\examples\advisor-mvp.request.json
 
 ## 驗證（Validation）
 
-從 public distribution root 執行（開發 repository 中即 `public/`）：
-
-```powershell
-node --check skill/scripts/*.mjs
-node --test skill/tests/*.test.mjs
-git diff --check
-```
-
-目前已驗證 regression baseline：**166 passed, 0 failed**。
+開發用 regression suite 維護於 repository-level `tests/`，刻意不包含在公開 Skill distribution 內。
 
 ## v1 目前限制（Current v1 Limitations）
 

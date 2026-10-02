@@ -528,15 +528,7 @@ A successful CLI run returns `state = advised`, a validated Dispatch Plan, and `
 
 ## Validation
 
-From the public distribution root (`public/` in the development repository):
-
-```powershell
-node --check skill/scripts/*.mjs
-node --test skill/tests/*.test.mjs
-git diff --check
-```
-
-Current verified regression baseline: **166 passed, 0 failed**.
+The development regression suite is maintained at repository-level `tests/` and is intentionally excluded from the public Skill distribution.
 
 ## Current v1 limitations
 
