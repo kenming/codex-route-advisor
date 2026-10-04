@@ -183,7 +183,8 @@ Codex Route Advisor 可透過 `codex debug models` 讀取目前 Codex host 實�
 模型「可用性」與「路由能力」刻意分離：
 
 - 新偵測到的模型會立即進入 runtime Inventory；
-- exact-id capability registry 負責定義 family、routing tiers 與支援的 reasoning efforts；
+- Host 明確提供的 supported reasoning efforts 會保留在 Inventory；
+- exact-id capability registry 只負責 Advisor policy 的 family 與 routing tiers；
 - 若新模型尚無 capability metadata，仍會顯示為 `unclassified`，但 `routable = false`；
 - 後續補上 capability metadata 後，可直接重新分類既有 cache 中的模型，不必再次進行 discovery request。
 
@@ -261,10 +262,10 @@ T2 診斷失敗根因 — depends on T1，且只有 T1 失敗時執行
 
 | 分類（Tier） | 預設配置 | 典型用途 |
 | --- | --- | --- |
-| Fast | Luna High | 明確、局部、低歧義的實作或 deterministic verification |
-| Balanced | Sol Medium | 一般工程判斷與有限設計選擇 |
-| Strong | Sol XHigh | 未知根因、competing hypotheses、深度診斷 |
-| Long | Astra Medium | 廣上下文重構、migration、rollout、跨系統長程推理 |
+| Fast | `gpt-6-luna / high` | 明確、局部、低歧義的實作或 deterministic verification |
+| Balanced | `gpt-6.1-sol / medium` | 一般工程判斷與有限設計選擇 |
+| Strong | `gpt-6.1-sol / xhigh` | 未知根因、competing hypotheses、深度診斷 |
+| Long | `gpt-6-astra / medium` | 廣上下文重構、migration、rollout、跨系統長程推理 |
 
 某一個困難子任務，不會自動把其他 sibling tasks 一起升級。`long` 也不是 `strong` 的一般升級版。
 
@@ -474,17 +475,17 @@ Release acceptance 目前使用 Codex host rollout 的 `turn_context` 驗證 per
 同一個 request 可以合理產生：
 
 ```text
-T1 實作局部修改 + focused test → Fast / Luna High
-T2 診斷失敗根因                  → Strong / Sol XHigh
+T1 實作局部修改 + focused test → Fast / gpt-6-luna / high
+T2 診斷失敗根因                  → Strong / gpt-6.1-sol / xhigh
                                      only if T1 fails
 ```
 
 若是不同 implementation surfaces 的獨立工作，也可以：
 
 ```text
-T1 實作 helper A → Fast / Luna High
-T2 實作 helper B → Fast / Luna High   （與 T1 平行）
-T3 整合 A + B    → Fast / Luna High   （depends on T1, T2）
+T1 實作 helper A → Fast / gpt-6-luna / high
+T2 實作 helper B → Fast / gpt-6-luna / high   （與 T1 平行）
+T3 整合 A + B    → Fast / gpt-6-luna / high   （depends on T1, T2）
 ```
 
 ## 核心 scripts（Core Scripts）

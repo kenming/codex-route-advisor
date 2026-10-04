@@ -37,6 +37,17 @@ tiers
 
 Reasoning-effort support is a Host fact from Model Inventory, not Advisor policy.
 
+Current built-in exact policy:
+
+```text
+gpt-5.6-luna → luna  → fast
+gpt-5.6-sol  → sol   → balanced,strong
+gpt-6-luna   → luna  → fast
+gpt-6-sol    → sol   → balanced,strong
+gpt-6.1-sol  → sol   → balanced,strong
+gpt-6-astra  → astra → long
+```
+
 The built-in exact-id registry lives with the Skill implementation and is
 release-managed. Runtime/host capability entries may be supplied explicitly and
 override built-in entries with the same id.
@@ -56,6 +67,53 @@ A discovered model with no exact capability entry is reported as:
 ```
 
 It is visible but excluded from automatic routing.
+
+## Maintainer model-version update workflow
+
+Treat discovery, classification, and default promotion as separate decisions.
+
+For a future model such as `gpt-6.2-sol`:
+
+1. **Detect**
+   - obtain current Host Inventory through normal discovery;
+   - confirm the exact model id and Host-reported `supportedEfforts`;
+   - `status` / `verify` should show a newly available unknown id as `unclassified`;
+   - do not infer family or tier from the model name.
+
+2. **Classify**
+   - review the model's intended capability against the existing `fast / balanced / strong / long` taxonomy;
+   - add an exact `id / family / tiers` capability entry only after that review;
+   - do not copy Host `supportedEfforts` into Advisor policy.
+
+3. **Validate**
+   - verify the exact model is currently available in Host Inventory;
+   - verify the intended default/recommended effort is explicitly present in Host facts;
+   - run focused capability/inventory/resolver tests and the full repository regression;
+   - keep synthetic future-version tests proving unknown ids fail closed before exact classification.
+
+4. **Evaluate default suitability**
+   - classification only makes a model eligible for routing; it does **not** make it a default;
+   - compare the classified model against representative tasks for the tier it might replace;
+   - a higher version number is not evidence that it is a better default.
+
+5. **Optionally update defaults**
+   - only after capability review and validation, change `DEFAULT_ROUTING_PREFERENCES`;
+   - update current-facing Skill/config/README documentation and default-profile tests together;
+   - re-run live Host resolution for all four default tiers.
+
+Canonical flow:
+
+```text
+detect
+→ classify exact id
+→ validate Host facts + regression
+→ evaluate default suitability
+→ optional default update
+```
+
+Never implement automatic latest-version promotion. For example, a classified and available
+`gpt-6.2-sol` must not replace the current `gpt-6.1-sol` default merely because
+`6.2 > 6.1`.
 
 ## Availability cache
 

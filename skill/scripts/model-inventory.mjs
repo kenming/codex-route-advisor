@@ -28,6 +28,21 @@ export const BUILTIN_MODEL_CAPABILITIES = Object.freeze([
     tiers: Object.freeze(["balanced", "strong"]),
   }),
   Object.freeze({
+    id: "gpt-6-luna",
+    family: "luna",
+    tiers: Object.freeze(["fast"]),
+  }),
+  Object.freeze({
+    id: "gpt-6-sol",
+    family: "sol",
+    tiers: Object.freeze(["balanced", "strong"]),
+  }),
+  Object.freeze({
+    id: "gpt-6.1-sol",
+    family: "sol",
+    tiers: Object.freeze(["balanced", "strong"]),
+  }),
+  Object.freeze({
     id: "gpt-6-astra",
     family: "astra",
     tiers: Object.freeze(["long"]),

@@ -48,19 +48,19 @@ Linux:   $XDG_CONFIG_HOME/codex-route-advisor/config.json
   },
   "routing": {
     "fast": {
-      "model": "luna",
+      "model": "gpt-6-luna",
       "effort": "high"
     },
     "balanced": {
-      "model": "sol",
+      "model": "gpt-6.1-sol",
       "effort": "medium"
     },
     "strong": {
-      "model": "sol",
+      "model": "gpt-6.1-sol",
       "effort": "xhigh"
     },
     "long": {
-      "model": "astra",
+      "model": "gpt-6-astra",
       "effort": "medium"
     }
   }
@@ -171,10 +171,10 @@ balanced = Sol XHigh
 ## Defaults
 
 ```text
-fast     → luna / high
-balanced → sol / medium
-strong   → sol / xhigh
-long     → astra / medium
+fast     → gpt-6-luna / high
+balanced → gpt-6.1-sol / medium
+strong   → gpt-6.1-sol / xhigh
+long     → gpt-6-astra / medium
 ```
 
 這些是 Skill default，不是不可覆寫的硬編碼選擇。

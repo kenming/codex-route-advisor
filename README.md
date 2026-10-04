@@ -183,7 +183,8 @@ Codex Route Advisor can inspect the model inventory currently exposed by the Cod
 Availability and routing capability are deliberately separate:
 
 - newly discovered models are added to the runtime inventory immediately;
-- an exact-id capability registry defines family, routing tiers, and supported reasoning efforts;
+- Host-supported reasoning efforts are preserved when the Host exposes them;
+- an exact-id capability registry defines Advisor policy for family and routing tiers;
 - a discovered model without capability metadata remains visible as `unclassified` and `routable = false`;
 - after capability metadata is added, a cached inventory entry can become routable without requiring another discovery request.
 
@@ -261,10 +262,10 @@ At execution time, the Coordinator performs a final mutable-state safety check. 
 
 | Tier | Default profile | Typical use |
 | --- | --- | --- |
-| Fast | Luna High | Clear, local, low-ambiguity implementation or deterministic verification |
-| Balanced | Sol Medium | Ordinary engineering judgment and bounded design choices |
-| Strong | Sol XHigh | Unknown root cause, competing hypotheses, deep diagnosis |
-| Long | Astra Medium | Broad-context redesign, migration, rollout, sustained cross-system reasoning |
+| Fast | `gpt-6-luna / high` | Clear, local, low-ambiguity implementation or deterministic verification |
+| Balanced | `gpt-6.1-sol / medium` | Ordinary engineering judgment and bounded design choices |
+| Strong | `gpt-6.1-sol / xhigh` | Unknown root cause, competing hypotheses, deep diagnosis |
+| Long | `gpt-6-astra / medium` | Broad-context redesign, migration, rollout, sustained cross-system reasoning |
 
 A difficult child task does not automatically escalate its siblings. `long` is not a generic upgrade from `strong`.
 
@@ -474,17 +475,17 @@ Release acceptance verifies per-worker model / effort from Codex-host rollout `t
 One request may legitimately produce:
 
 ```text
-T1 Implement local change + focused test → Fast / Luna High
-T2 Diagnose failure                    → Strong / Sol XHigh
+T1 Implement local change + focused test → Fast / gpt-6-luna / high
+T2 Diagnose failure                    → Strong / gpt-6.1-sol / xhigh
                                         only if T1 fails
 ```
 
 Or, for independent implementation surfaces:
 
 ```text
-T1 Implement helper A → Fast / Luna High
-T2 Implement helper B → Fast / Luna High   (parallel with T1)
-T3 Integrate A + B    → Fast / Luna High   (depends on T1, T2)
+T1 Implement helper A → Fast / gpt-6-luna / high
+T2 Implement helper B → Fast / gpt-6-luna / high   (parallel with T1)
+T3 Integrate A + B    → Fast / gpt-6-luna / high   (depends on T1, T2)
 ```
 
 ## Core scripts

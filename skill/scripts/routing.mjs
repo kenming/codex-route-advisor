@@ -11,10 +11,10 @@ export const MODEL_FAMILIES = Object.freeze({
 });
 
 export const DEFAULT_ROUTING_PREFERENCES = Object.freeze({
-  fast: Object.freeze({ model: "luna", effort: "high" }),
-  balanced: Object.freeze({ model: "sol", effort: "medium" }),
-  strong: Object.freeze({ model: "sol", effort: "xhigh" }),
-  long: Object.freeze({ model: "astra", effort: "medium" }),
+  fast: Object.freeze({ model: "gpt-6-luna", effort: "high" }),
+  balanced: Object.freeze({ model: "gpt-6.1-sol", effort: "medium" }),
+  strong: Object.freeze({ model: "gpt-6.1-sol", effort: "xhigh" }),
+  long: Object.freeze({ model: "gpt-6-astra", effort: "medium" }),
 });
 
 export const DEFAULT_CONFIDENCE_THRESHOLD = 0.75;

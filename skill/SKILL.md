@@ -135,10 +135,10 @@ implement X
 Default profiles：
 
 ```text
-Fast     → Luna High
-Balanced → Sol Medium
-Strong   → Sol XHigh
-Long     → Astra Medium
+Fast     → gpt-6-luna / High
+Balanced → gpt-6.1-sol / Medium
+Strong   → gpt-6.1-sol / XHigh
+Long     → gpt-6-astra / Medium
 ```
 
 低 confidence 不是自動升級 tier 的理由。
@@ -324,9 +324,9 @@ Jev credential 未設定不阻止 Advisor 使用；Agent fallback 是正式支�
 正常模式保持精簡，例如：
 
 ```text
-T1 Implement product list — Sol Medium
-T2 Playwright validation — Luna High — depends on T1
-T3 Diagnose/fix failure — Sol XHigh — only if T2 fails
+T1 Implement product list — gpt-6.1-sol / Medium
+T2 Playwright validation — gpt-6-luna / High — depends on T1
+T3 Diagnose/fix failure — gpt-6.1-sol / XHigh — only if T2 fails
 ```
 
 只有在使用者要求 `explain` 時，再顯示 boundary reason、assessment source、confidence、routing reason 與 fallback diagnostics。

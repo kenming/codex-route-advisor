@@ -39,7 +39,7 @@ Use for:
 - deterministic inspection or validation;
 - CRUD / small focused changes when little judgment is required.
 
-Default: Luna High.
+Default: `gpt-6-luna / high`.
 ### Balanced
 
 Use for:
@@ -48,7 +48,7 @@ Use for:
 - implementation where the goal and acceptance criteria are known;
 - work that does not require unknown-root-cause diagnosis.
 
-Default: Sol Medium.
+Default: `gpt-6.1-sol / medium`.
 
 ### Strong
 
@@ -58,7 +58,7 @@ Use for:
 - cross-subsystem diagnosis;
 - unusually strict or deep technical verification.
 
-Default: Sol XHigh.
+Default: `gpt-6.1-sol / xhigh`.
 
 ### Long
 
@@ -68,7 +68,7 @@ Use for:
 - rollout / compatibility / rollback planning;
 - sustained framing across a large system.
 
-Default: Astra Medium.
+Default: `gpt-6-astra / medium`.
 
 `long` is not a generic upgrade from `strong`.
 
@@ -155,7 +155,7 @@ Session > Workspace > Global > Skill default
 ```
 
 The resolver may use a supplied runtime model catalog.
-Without an authoritative catalog, an abstract family recommendation such as `sol` or `luna` is valid and availability remains unchecked internally.
+Skill defaults use concrete exact-id models. Without an authoritative runtime catalog, a registered exact-id default can still be classified from Advisor policy while availability remains unchecked. Explicit configuration may still use abstract family references such as `sol` or `luna`.
 
 ## Explicit model override
 
@@ -181,7 +181,7 @@ This is a per-task routing primitive, not a runtime dispatch mechanism.
   },
   "recommendation": {
     "tier": "balanced",
-    "model": "sol",
+    "model": "gpt-6.1-sol",
     "effort": "medium"
   }
 }

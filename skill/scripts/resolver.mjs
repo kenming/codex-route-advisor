@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { normalizeModelCatalog } from "./model-catalog.mjs";
+import { BUILTIN_MODEL_CAPABILITIES } from "./model-inventory.mjs";
 import {
   DEFAULT_ROUTING_PREFERENCES,
   EFFORTS,
@@ -31,6 +32,21 @@ function descriptorForReference(reference, catalog, catalogSupplied) {
 
   const exact = catalog.find((entry) => entry.id === normalized);
   if (exact) return { ...exact, abstractFamily: false };
+
+  const builtInCapability = BUILTIN_MODEL_CAPABILITIES.find(
+    (entry) => entry.id === normalized,
+  );
+  if (builtInCapability) {
+    return {
+      id: builtInCapability.id,
+      family: builtInCapability.family,
+      tiers: [...builtInCapability.tiers],
+      supportedEfforts: null,
+      available: false,
+      abstractFamily: false,
+      unchecked: !catalogSupplied,
+    };
+  }
 
   if (!catalogSupplied) {
     return {
@@ -231,11 +247,26 @@ function resolveExplicitTier({ requestedTier, descriptor, effort }) {
     return descriptor.tiers[0];
   }
 
-  const profileMatches = ROUTING_TIERS.filter((tier) => (
-    DEFAULT_ROUTING_PREFERENCES[tier].model === descriptor.family
-    && DEFAULT_ROUTING_PREFERENCES[tier].effort === effort
-    && (descriptor.tiers.length === 0 || descriptor.tiers.includes(tier))
-  ));
+  const profileMatches = ROUTING_TIERS.filter((tier) => {
+    const defaultModel = DEFAULT_ROUTING_PREFERENCES[tier].model;
+    const defaultCapability = BUILTIN_MODEL_CAPABILITIES.find(
+      (entry) => entry.id === defaultModel,
+    );
+    const modelMatches = (
+      defaultModel === descriptor.id
+      || defaultModel === descriptor.family
+      || (
+        defaultCapability?.family !== undefined
+        && defaultCapability.family === descriptor.family
+      )
+    );
+
+    return (
+      modelMatches
+      && DEFAULT_ROUTING_PREFERENCES[tier].effort === effort
+      && (descriptor.tiers.length === 0 || descriptor.tiers.includes(tier))
+    );
+  });
 
   if (profileMatches.length === 1) {
     return profileMatches[0];
