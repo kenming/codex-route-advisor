@@ -21,19 +21,16 @@ export const BUILTIN_MODEL_CAPABILITIES = Object.freeze([
     id: "gpt-5.6-luna",
     family: "luna",
     tiers: Object.freeze(["fast"]),
-    supportedEfforts: Object.freeze(["low", "medium", "high", "xhigh", "max"]),
   }),
   Object.freeze({
     id: "gpt-5.6-sol",
     family: "sol",
     tiers: Object.freeze(["balanced", "strong"]),
-    supportedEfforts: Object.freeze(["low", "medium", "high", "xhigh", "max"]),
   }),
   Object.freeze({
     id: "gpt-6-astra",
     family: "astra",
     tiers: Object.freeze(["long"]),
-    supportedEfforts: Object.freeze(["low", "medium", "high", "xhigh", "max"]),
   }),
 ]);
 
@@ -155,7 +152,7 @@ export function normalizeModelCapabilities(capabilities = []) {
     if (!isPlainObject(entry)) {
       fail("invalid_schema", "Each modelCapabilities entry must be an object");
     }
-    const allowed = new Set(["id", "family", "tiers", "supportedEfforts"]);
+    const allowed = new Set(["id", "family", "tiers"]);
     const unknown = Object.keys(entry).find((key) => !allowed.has(key));
     if (unknown) {
       fail("invalid_schema", `Unexpected modelCapabilities field: ${unknown}`, {
@@ -200,24 +197,10 @@ export function normalizeModelCapabilities(capabilities = []) {
         { field: "modelCapabilities.tiers", model: modelId },
       );
     }
-    if (
-      !Array.isArray(entry.supportedEfforts)
-      || entry.supportedEfforts.length === 0
-      || entry.supportedEfforts.some((effort) => !EFFORTS.includes(effort))
-      || new Set(entry.supportedEfforts).size !== entry.supportedEfforts.length
-    ) {
-      fail(
-        "invalid_schema",
-        `modelCapabilities entry ${modelId} requires unique valid supportedEfforts`,
-        { field: "modelCapabilities.supportedEfforts", model: modelId },
-      );
-    }
-
     return {
       id: modelId,
       family: entry.family,
       tiers: [...entry.tiers],
-      supportedEfforts: [...entry.supportedEfforts],
     };
   });
 }
@@ -249,11 +232,18 @@ export function resolveInventoryCatalog(
       continue;
     }
 
+    const supportedEfforts = (model.supportedEfforts ?? [])
+      .filter((effort) => EFFORTS.includes(effort));
+
+    if (supportedEfforts.length === 0) {
+      continue;
+    }
+
     catalog.push({
       id: model.id,
       family: capability.family,
       tiers: [...capability.tiers],
-      supportedEfforts: [...capability.supportedEfforts],
+      supportedEfforts,
       available: model.available,
     });
   }

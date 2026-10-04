@@ -15,13 +15,15 @@ discoverModels({
 })
 → {
   inventory: [
-    { id, available }
+    { id, available, supportedEfforts? }
   ]
 }
 ```
 
 A discovered model may be available while its routing capability is still unknown.
-The core must not infer `family`, `tiers`, or `supportedEfforts` from the model id.
+The core must not infer `family` or `tiers` from the model id. When the Host
+explicitly exposes reasoning efforts, they are preserved as Host facts; absence
+is not guessed.
 
 For backward compatibility, adapters/tests may still return the legacy complete
 `{ catalog: [...] }` shape. That path remains supported but is not the preferred
@@ -39,11 +41,12 @@ exact-id Capability Registry
 Resolved Routable Catalog
 ```
 
-Inventory entries require only:
+Inventory entries require:
 
 ```text
 id
 available
+supportedEfforts (optional Host fact)
 ```
 
 Capability entries are maintained separately and require:
@@ -52,7 +55,6 @@ Capability entries are maintained separately and require:
 id
 family
 tiers
-supportedEfforts
 ```
 
 Only an exact model-id capability match can classify a discovered model.
@@ -130,7 +132,11 @@ Preferred deterministic injection:
 {
   "modelDiscovery": {
     "inventory": [
-      { "id": "gpt-6.1-sol", "available": true }
+      {
+        "id": "gpt-6.1-sol",
+        "available": true,
+        "supportedEfforts": ["medium", "high", "xhigh"]
+      }
     ]
   },
   "modelCapabilities": [],
@@ -159,17 +165,18 @@ codex debug models
 and converts the returned host catalog to Inventory only:
 
 ```text
-slug + visibility
+slug + visibility + supported_reasoning_levels[].effort
 →
-id + available
+id + available + supportedEfforts
 ```
 
 Entries with `visibility = list` are treated as available for automatic Advisor
 selection. Hidden entries remain visible in Inventory as `available = false`.
 
-The adapter deliberately ignores advertised reasoning metadata for routing
-classification. Family / tier / supported-effort routing capability remains an
-exact-id Capability Registry concern.
+The adapter preserves advertised reasoning effort metadata as Host facts.
+Family / tier classification remains an exact-id Capability Registry concern.
+Host-specific efforts such as `ultra` stay in Inventory but are not promoted
+into the Advisor routing effort vocabulary by this contract.
 
 `advise-task.mjs` and `route-task.mjs` use this adapter by default when no
 explicit runtime inventory/catalog override short-circuits discovery. Direct

@@ -33,8 +33,9 @@ Capability entries use exact model ids:
 id
 family
 tiers
-supportedEfforts
 ```
+
+Reasoning-effort support is a Host fact from Model Inventory, not Advisor policy.
 
 The built-in exact-id registry lives with the Skill implementation and is
 release-managed. Runtime/host capability entries may be supplied explicitly and
@@ -72,8 +73,10 @@ Schema: `references/model-inventory-cache.schema.json`.
 Fresh TTL is 24 hours. Cache may be reused as stale fallback for at most seven
 days.
 
-Because the cache stores availability separately, a later capability-registry
+Because the cache stores Host inventory separately, a later capability-registry
 update can classify an already-discovered model without requiring rediscovery.
+If Host effort metadata is absent, the resolver does not guess supported efforts
+from Advisor policy and the model does not enter the routable catalog.
 
 ## Legacy complete catalog compatibility
 
@@ -120,8 +123,8 @@ default.
 
 Deterministic callers may still supply explicit runtime facts. `scripts/route-task.mjs` accepts:
 
-- `modelInventory` — direct availability facts;
-- `modelCapabilities` — exact-id capability registry overlay;
+- `modelInventory` — direct Host facts: availability plus optional supported efforts;
+- `modelCapabilities` — exact-id Advisor policy overlay using `id / family / tiers`;
 - `modelDiscovery.inventory` — preferred discovery result;
 - legacy `modelCatalog` / `modelDiscovery.catalog`.
 
