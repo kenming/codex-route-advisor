@@ -9,6 +9,7 @@ import {
   resolveModelCatalog,
 } from "./model-catalog.mjs";
 import {
+  buildModelCompatibilityReport,
   clearModelInventoryCache,
   inspectModelInventoryCache,
   modelInventoryCachePath,
@@ -251,14 +252,36 @@ function discoveryStatus(plan, extra = {}) {
 }
 
 function legacyInventory(catalog) {
-  return catalog.map(({ id, available }) => ({ id, available }));
+  return catalog.map(({ id, available, supportedEfforts }) => ({
+    id,
+    available,
+    ...(supportedEfforts !== undefined
+      ? { supportedEfforts: [...supportedEfforts] }
+      : {}),
+  }));
 }
 
 function withLegacyInventory(result) {
+  const inventory = legacyInventory(result.catalog);
+  const capabilityRegistry = result.catalog.map(({ id, family, tiers }) => ({
+    id,
+    family,
+    tiers: [...tiers],
+  }));
+  const compatibility = buildModelCompatibilityReport(inventory, {
+    capabilityRegistry,
+  });
+
   return {
     ...result,
-    inventory: legacyInventory(result.catalog),
-    unclassified: [],
+    inventory,
+    unclassified: compatibility.unclassified.map((model) => ({
+      id: model.id,
+      available: model.available,
+      capabilityStatus: model.capabilityStatus,
+      routable: model.routable,
+    })),
+    compatibility,
   };
 }
 

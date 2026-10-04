@@ -205,11 +205,7 @@ export function normalizeModelCapabilities(capabilities = []) {
   });
 }
 
-export function resolveInventoryCatalog(
-  inventory,
-  { capabilityRegistry = [] } = {},
-) {
-  const normalizedInventory = normalizeModelInventory(inventory);
+function resolveCapabilityPolicy(capabilityRegistry = []) {
   const builtIn = normalizeModelCapabilities(BUILTIN_MODEL_CAPABILITIES);
   const runtime = normalizeModelCapabilities(capabilityRegistry);
   const capabilityById = new Map();
@@ -217,20 +213,138 @@ export function resolveInventoryCatalog(
   for (const capability of builtIn) capabilityById.set(capability.id, capability);
   for (const capability of runtime) capabilityById.set(capability.id, capability);
 
-  const catalog = [];
+  return {
+    capabilities: [...capabilityById.values()],
+    capabilityById,
+  };
+}
+
+function compatibilityReportFromNormalized(
+  normalizedInventory,
+  capabilities,
+  capabilityById,
+) {
+  const inventoryById = new Map(normalizedInventory.map((model) => [model.id, model]));
+  const classified = [];
   const unclassified = [];
+  const unavailable = [];
 
   for (const model of normalizedInventory) {
     const capability = capabilityById.get(model.id);
-    if (!capability) {
-      unclassified.push({
+
+    if (model.available && capability) {
+      classified.push({
         id: model.id,
-        available: model.available,
-        capabilityStatus: "unclassified",
-        routable: false,
+        family: capability.family,
+        tiers: [...capability.tiers],
+        available: true,
+        capabilityStatus: "classified",
+        ...(model.supportedEfforts !== undefined
+          ? { supportedEfforts: [...model.supportedEfforts] }
+          : {}),
       });
       continue;
     }
+
+    if (model.available && !capability) {
+      unclassified.push({
+        id: model.id,
+        available: true,
+        capabilityStatus: "unclassified",
+        routable: false,
+        ...(model.supportedEfforts !== undefined
+          ? { supportedEfforts: [...model.supportedEfforts] }
+          : {}),
+      });
+      continue;
+    }
+
+    if (!model.available && capability) {
+      unavailable.push({
+        id: model.id,
+        family: capability.family,
+        tiers: [...capability.tiers],
+        available: false,
+        capabilityStatus: "unavailable",
+        routable: false,
+        hostObserved: true,
+        ...(model.supportedEfforts !== undefined
+          ? { supportedEfforts: [...model.supportedEfforts] }
+          : {}),
+      });
+    }
+  }
+
+  for (const capability of capabilities) {
+    if (inventoryById.has(capability.id)) continue;
+    unavailable.push({
+      id: capability.id,
+      family: capability.family,
+      tiers: [...capability.tiers],
+      available: false,
+      capabilityStatus: "unavailable",
+      routable: false,
+      hostObserved: false,
+    });
+  }
+
+  const byId = (left, right) => left.id.localeCompare(right.id);
+  classified.sort(byId);
+  unclassified.sort(byId);
+  unavailable.sort(byId);
+
+  return { classified, unclassified, unavailable };
+}
+
+export function buildModelCompatibilityReport(
+  inventory,
+  { capabilityRegistry = [] } = {},
+) {
+  const normalizedInventory = normalizeModelInventory(inventory);
+  const { capabilities, capabilityById } = resolveCapabilityPolicy(capabilityRegistry);
+  return compatibilityReportFromNormalized(
+    normalizedInventory,
+    capabilities,
+    capabilityById,
+  );
+}
+
+export function evaluateModelCompatibilityVerification(
+  inventory,
+  { capabilityRegistry = [] } = {},
+) {
+  const compatibility = buildModelCompatibilityReport(inventory, {
+    capabilityRegistry,
+  });
+  const warnings = compatibility.unclassified.map((model) => ({
+    code: "model_unclassified",
+    model: model.id,
+    message: `Model ${model.id} is available but has no exact Advisor capability policy; it remains non-routable.`,
+  }));
+
+  return {
+    ok: true,
+    warnings,
+    compatibility,
+  };
+}
+
+export function resolveInventoryCatalog(
+  inventory,
+  { capabilityRegistry = [] } = {},
+) {
+  const normalizedInventory = normalizeModelInventory(inventory);
+  const { capabilities, capabilityById } = resolveCapabilityPolicy(capabilityRegistry);
+  const compatibility = compatibilityReportFromNormalized(
+    normalizedInventory,
+    capabilities,
+    capabilityById,
+  );
+  const catalog = [];
+
+  for (const model of normalizedInventory) {
+    const capability = capabilityById.get(model.id);
+    if (!capability) continue;
 
     const supportedEfforts = (model.supportedEfforts ?? [])
       .filter((effort) => EFFORTS.includes(effort));
@@ -251,7 +365,13 @@ export function resolveInventoryCatalog(
   return {
     inventory: normalizedInventory,
     catalog,
-    unclassified,
+    unclassified: compatibility.unclassified.map((model) => ({
+      id: model.id,
+      available: model.available,
+      capabilityStatus: model.capabilityStatus,
+      routable: model.routable,
+    })),
+    compatibility,
   };
 }
 

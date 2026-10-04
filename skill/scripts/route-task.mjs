@@ -101,6 +101,11 @@ function catalogMetadata(catalog) {
     cacheState: catalog.cacheState ?? null,
     inventory: catalog.inventory ?? [],
     unclassified: catalog.unclassified ?? [],
+    compatibility: catalog.compatibility ?? {
+      classified: [],
+      unclassified: [],
+      unavailable: [],
+    },
     discovery: catalog.discovery ?? null,
   };
 }

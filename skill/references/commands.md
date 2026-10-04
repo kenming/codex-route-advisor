@@ -61,9 +61,15 @@ Read-only summary:
 - Workspace / Global config presence;
 - Jev `configured_unverified | unavailable` state;
 - runtime model inventory/cache facts when available;
+- model compatibility grouped as `classified / unclassified / unavailable`;
 - current Coordinator model/effort only when the Host exposes them.
 
-`status` must not persist configuration or make a Jev live API call.
+Compatibility meanings:
+- `classified`: Host available and exact Advisor policy exists;
+- `unclassified`: Host available but no exact Advisor policy; it remains non-routable;
+- `unavailable`: Advisor policy exists but the model is unavailable or not observed by the Host.
+
+`status` must not persist configuration, auto-classify models, update defaults, or make a Jev live API call.
 
 ## `reset`
 
@@ -89,7 +95,10 @@ Default verification is local/non-destructive:
 - required Skill files/scripts are present;
 - configuration loads and validates;
 - model discovery/cache can be inspected;
+- model compatibility can be evaluated;
 - Jev credential presence can be detected.
+
+An available `unclassified` model produces a `model_unclassified` warning only. That condition does not fail installation verification and must not auto-classify the model, change defaults, or mutate persisted configuration.
 
 Only `verify jev-live` or an equivalent explicit request may run `scripts/verify-jev.mjs`.
 Live verification must not change Router preference or persisted configuration.

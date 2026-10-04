@@ -38,6 +38,11 @@ $codex-route-advisor plan <task>
 
 沒有 command 時維持 Normal workflow。這是 Skill invocation contract，不是另一套 shell CLI；底層仍調用既有 scripts / lifecycle workflow。
 
+對 `status` / `verify`，model facts 必須經現有 discovery + exact-id policy 產生 Model Compatibility Report：
+- `status` 顯示 `classified / unclassified / unavailable` 三組，保持 read-only；
+- `verify` 對 available + `unclassified` 只回報 `model_unclassified` warning，不視為安裝失敗；
+- 兩者都不得自動新增 capability policy、更新 default profile 或修改 persisted config。
+
 ## Normal workflow
 
 處理一般開發需求時：

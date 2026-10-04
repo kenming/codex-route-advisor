@@ -114,6 +114,16 @@ Unclassified inventory is a separate state from a routing discrepancy:
 - discovered + unclassified → visible, non-routable;
 - classified + `available: false` → remains non-selectable.
 
+## Compatibility report
+
+`buildModelCompatibilityReport()` produces a deterministic read-only view with three groups:
+
+- `classified`: Host available and exact Advisor policy exists;
+- `unclassified`: Host available but exact Advisor policy is missing;
+- `unavailable`: exact Advisor policy exists but Host marks the model unavailable or does not report it.
+
+`evaluateModelCompatibilityVerification()` treats `unclassified` entries as `model_unclassified` warnings while keeping the model-verification result successful. These helpers never mutate policy, defaults, config, or cache state.
+
 ## Host integration
 
 Normal Codex execution uses `scripts/codex-model-source.mjs` to obtain the

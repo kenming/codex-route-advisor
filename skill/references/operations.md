@@ -48,7 +48,7 @@ $codex-route-advisor plan <task>
 
 `$codex-route-advisor config` 無參數時 inspect effective config；有變更要求時維持 `configure.mjs` patch semantics。
 
-`$codex-route-advisor status` 為 read-only：整合 config presence/effective values、Jev credential detection、model inventory/cache，以及 Host 可驗證時的 Coordinator profile。不得寫設定或進行 Jev live call。
+`$codex-route-advisor status` 為 read-only：整合 config presence/effective values、Jev credential detection、model inventory/cache、Model Compatibility Report，以及 Host 可驗證時的 Coordinator profile。Compatibility 必須分組顯示 `classified / unclassified / unavailable`；不得寫設定、自動分類 model、更新 defaults 或進行 Jev live call。
 
 ## Reset
 
@@ -58,7 +58,7 @@ Config reset 不連帶刪除 model cache、execution traces 或其他 state；�
 
 ## Verify Jev
 
-`$codex-route-advisor verify` 預設只做 local/non-destructive verification。只有使用者明確要求 `$codex-route-advisor verify jev-live` 或等價語意時執行：
+`$codex-route-advisor verify` 預設只做 local/non-destructive verification。Model Compatibility Report 中的 available + `unclassified` model 只產生 `model_unclassified` warning，不使 local verification 失敗，也不得因此自動新增 policy、更新 defaults 或修改 persisted config。只有使用者明確要求 `$codex-route-advisor verify jev-live` 或等價語意時執行：
 
 ```text
 node scripts/verify-jev.mjs
