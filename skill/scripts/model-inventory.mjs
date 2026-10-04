@@ -12,7 +12,8 @@ import {
   isPlainObject,
 } from "./routing.mjs";
 
-export const MODEL_INVENTORY_CACHE_SCHEMA_VERSION = 1;
+export const MODEL_INVENTORY_CACHE_SCHEMA_VERSION = 2;
+const LEGACY_MODEL_INVENTORY_CACHE_SCHEMA_VERSION = 1;
 
 // Exact-id registry only. Do not infer capability from model naming.
 export const BUILTIN_MODEL_CAPABILITIES = Object.freeze([
@@ -77,7 +78,7 @@ export function normalizeModelInventory(inventory = []) {
     if (!isPlainObject(entry)) {
       fail("invalid_schema", "Each modelInventory entry must be an object");
     }
-    const allowed = new Set(["id", "available"]);
+    const allowed = new Set(["id", "available", "supportedEfforts"]);
     const unknown = Object.keys(entry).find((key) => !allowed.has(key));
     if (unknown) {
       fail("invalid_schema", `Unexpected modelInventory field: ${unknown}`, {
@@ -104,7 +105,41 @@ export function normalizeModelInventory(inventory = []) {
         { field: "modelInventory.available", model: modelId },
       );
     }
-    return { id: modelId, available: entry.available };
+
+    let supportedEfforts;
+    if (entry.supportedEfforts !== undefined) {
+      if (!Array.isArray(entry.supportedEfforts)) {
+        fail(
+          "invalid_schema",
+          `modelInventory entry ${modelId} supportedEfforts must be an array`,
+          { field: "modelInventory.supportedEfforts", model: modelId },
+        );
+      }
+      const seenEfforts = new Set();
+      supportedEfforts = entry.supportedEfforts.map((effort) => {
+        if (
+          typeof effort !== "string"
+          || !effort
+          || effort !== effort.trim().toLowerCase()
+          || !/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/.test(effort)
+          || seenEfforts.has(effort)
+        ) {
+          fail(
+            "invalid_schema",
+            `modelInventory entry ${modelId} supportedEfforts must be canonical and unique`,
+            { field: "modelInventory.supportedEfforts", model: modelId },
+          );
+        }
+        seenEfforts.add(effort);
+        return effort;
+      });
+    }
+
+    return {
+      id: modelId,
+      available: entry.available,
+      ...(supportedEfforts !== undefined ? { supportedEfforts } : {}),
+    };
   });
 }
 
@@ -243,9 +278,13 @@ function parseFetchedAt(value) {
 }
 
 export function validateModelInventoryCache(cache) {
+  const supportedSchemaVersions = new Set([
+    LEGACY_MODEL_INVENTORY_CACHE_SCHEMA_VERSION,
+    MODEL_INVENTORY_CACHE_SCHEMA_VERSION,
+  ]);
   if (
     !isPlainObject(cache)
-    || cache.schemaVersion !== MODEL_INVENTORY_CACHE_SCHEMA_VERSION
+    || !supportedSchemaVersions.has(cache.schemaVersion)
   ) {
     fail("invalid_inventory_cache_schema", "Unsupported model inventory cache schema", {
       field: "schemaVersion",
@@ -253,6 +292,7 @@ export function validateModelInventoryCache(cache) {
     });
   }
 
+  const sourceSchemaVersion = cache.schemaVersion;
   const allowed = new Set(["schemaVersion", "fetchedAt", "inventory"]);
   const unknown = Object.keys(cache).find((key) => !allowed.has(key));
   if (unknown) {
@@ -279,6 +319,21 @@ export function validateModelInventoryCache(cache) {
     );
   }
 
+  if (sourceSchemaVersion === LEGACY_MODEL_INVENTORY_CACHE_SCHEMA_VERSION) {
+    for (const entry of cache.inventory) {
+      if (
+        !isPlainObject(entry)
+        || Object.keys(entry).some((key) => !new Set(["id", "available"]).has(key))
+      ) {
+        fail(
+          "invalid_inventory_cache_schema",
+          "Legacy model inventory cache contains unsupported entry fields",
+          { field: "inventory" },
+        );
+      }
+    }
+  }
+
   return {
     schemaVersion: MODEL_INVENTORY_CACHE_SCHEMA_VERSION,
     fetchedAt: new Date(fetchedAtMs).toISOString(),
@@ -296,10 +351,15 @@ export async function readModelInventoryCache(file = modelInventoryCachePath()) 
   }
 
   try {
+    const parsed = JSON.parse(text);
+    const sourceSchemaVersion = parsed?.schemaVersion;
     return {
       state: "valid",
       file,
-      cache: validateModelInventoryCache(JSON.parse(text)),
+      cache: validateModelInventoryCache(parsed),
+      ...(sourceSchemaVersion !== MODEL_INVENTORY_CACHE_SCHEMA_VERSION
+        ? { sourceSchemaVersion }
+        : {}),
     };
   } catch (error) {
     if (
@@ -371,5 +431,8 @@ export async function inspectModelInventoryCache({
     ...cached,
     ageMs,
     freshness,
+    ...(cached.sourceSchemaVersion !== undefined
+      ? { schemaUpgradeRequired: true }
+      : {}),
   };
 }

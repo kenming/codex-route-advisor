@@ -51,9 +51,44 @@ export function normalizeCodexModelInventory(payload) {
     }
     seen.add(id);
 
+    let supportedEfforts;
+    if (Object.hasOwn(model, "supported_reasoning_levels")) {
+      if (!Array.isArray(model.supported_reasoning_levels)) {
+        throw discoveryError(
+          "invalid_provider_response",
+          `Codex model ${id} supported_reasoning_levels must be an array`,
+        );
+      }
+
+      const seenEfforts = new Set();
+      supportedEfforts = model.supported_reasoning_levels.map((level) => {
+        if (!level || typeof level !== "object" || Array.isArray(level)) {
+          throw discoveryError(
+            "invalid_provider_response",
+            `Codex model ${id} reasoning level must be an object`,
+          );
+        }
+        if (
+          typeof level.effort !== "string"
+          || !level.effort
+          || level.effort !== level.effort.trim().toLowerCase()
+          || !/^[a-z0-9]+(?:[-_][a-z0-9]+)*$/.test(level.effort)
+          || seenEfforts.has(level.effort)
+        ) {
+          throw discoveryError(
+            "invalid_provider_response",
+            `Codex model ${id} reasoning effort must be canonical and unique`,
+          );
+        }
+        seenEfforts.add(level.effort);
+        return level.effort;
+      });
+    }
+
     return {
       id,
       available: model.visibility === "list",
+      ...(supportedEfforts !== undefined ? { supportedEfforts } : {}),
     };
   });
 }

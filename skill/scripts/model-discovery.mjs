@@ -214,6 +214,16 @@ export async function planModelDiscovery({
     file: inventoryCacheFile,
     now,
   });
+  if (inventoryCached.state === "valid" && inventoryCached.schemaUpgradeRequired) {
+    return {
+      required: true,
+      reason: "cache_schema_upgrade",
+      cacheKind: "inventory",
+      cacheState: "valid",
+      ageMs: inventoryCached.ageMs,
+      sourceSchemaVersion: inventoryCached.sourceSchemaVersion,
+    };
+  }
   const inventoryPlan = cachePlan(inventoryCached, "inventory");
   if (inventoryPlan) return inventoryPlan;
   const legacyCached = await inspectModelCache({ file: cacheFile, now });
@@ -405,6 +415,26 @@ export async function resolveModelCatalogWithDiscovery({
   }
 
   if (typeof discoverModels !== "function") {
+    if (plan.reason === "cache_schema_upgrade") {
+      const cachedInventory = await resolveCachedInventory({
+        capabilityRegistry,
+        inventoryCacheFile,
+        now,
+        refreshFailed: true,
+      });
+      if (cachedInventory) {
+        return {
+          ...cachedInventory,
+          discovery: discoveryStatus(plan, {
+            error: {
+              code: "unsupported",
+              message: "No model discovery adapter is available",
+            },
+          }),
+        };
+      }
+    }
+
     const legacy = await resolveModelCatalog({
       cacheFile,
       now,
