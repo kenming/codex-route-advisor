@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="420" viewBox="0 0 960 420" role="img" aria-labelledby="title desc">
+  <title id="title">配置模擬：假設 Token 預算</title>
+  <desc id="desc">示意假設，非實測。純 Astra 合計 100 千 Token；混合配置合計 85 千，包含 Astra 工作 35、Sol 20、Luna 20，以及使用 Astra 的協調開銷 10。減少 15% 僅適用於這組假設預算。</desc>
+  <rect width="960" height="420" rx="16" fill="#f6f8fc"/>
+  <g font-family="Segoe UI, Microsoft JhengHei, Noto Sans TC, sans-serif" fill="#16263d">
+    <text x="28" y="40" font-size="25" font-weight="650">配置模擬 · 假設 Token 預算</text>
+    <text x="28" y="70" font-size="16" fill="#53677f">非實測 · k tokens = 1,000 tokens · 輸入＋輸出（含 reasoning）</text>
+    <text x="28" y="156" font-size="20" font-weight="600">純 Astra / Medium</text>
+    <text x="28" y="182" font-size="14" fill="#53677f">全部工作，含原生規劃與協調</text>
+    <rect id="baseline" x="280" y="132" width="560" height="44" fill="#3f51b5"/>
+    <text x="860" y="160" font-size="20" font-weight="600">100k</text>
+    <text x="28" y="236" font-size="20" font-weight="600">Advisor 混合配置</text>
+    <text x="28" y="262" font-size="14" fill="#53677f">包含 Advisor 規劃、交接與整合</text>
+    <rect id="astra-work" x="280" y="212" width="196" height="44" fill="#3f51b5"/>
+    <rect id="sol-work" x="476" y="212" width="112" height="44" fill="#0e7490"/>
+    <rect id="luna-work" x="588" y="212" width="112" height="44" fill="#7c3aed"/>
+    <rect id="coordination" x="700" y="212" width="56" height="44" fill="#64748b"/>
+    <g fill="#ffffff" font-size="17" font-weight="600" text-anchor="middle">
+      <text x="378" y="240">35</text><text x="532" y="240">20</text>
+      <text x="644" y="240">20</text><text x="728" y="240">10</text>
+    </g>
+    <text x="776" y="240" font-size="20" font-weight="600">85k</text>
+    <path d="M280 284 H840 M280 279 V289 M420 279 V289 M560 279 V289 M700 279 V289 M840 279 V289" stroke="#c0cbd9" fill="none"/>
+    <g font-size="13" fill="#53677f" text-anchor="middle">
+      <text x="280" y="307">0</text><text x="420" y="307">25</text>
+      <text x="560" y="307">50</text><text x="700" y="307">75</text><text x="840" y="307">100k</text>
+    </g>
+    <g font-size="14" fill="#53677f">
+      <rect x="28" y="332" width="14" height="14" fill="#3f51b5"/><text x="50" y="345">Astra / Medium</text>
+      <rect x="223" y="332" width="14" height="14" fill="#0e7490"/><text x="245" y="345">Sol / Medium</text>
+      <rect x="399" y="332" width="14" height="14" fill="#7c3aed"/><text x="421" y="345">Luna / Max*</text>
+      <rect x="566" y="332" width="14" height="14" fill="#64748b"/><text x="588" y="345">協調開銷（Astra / Medium）</text>
+    </g>
+    <text x="28" y="378" font-size="17" font-weight="600">本假設下總 Token 減少 15%；協調與重試開銷可能抵銷節省。</text>
+    <text x="28" y="404" font-size="14" fill="#53677f">*本次 Session 明確覆寫，Luna 預設為 High。此圖不是費用或訂閱額度估算。</text>
+  </g>
+</svg>

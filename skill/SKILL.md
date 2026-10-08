@@ -1,6 +1,6 @@
 ---
 name: codex-route-advisor
-description: 將 Codex 開發需求拆成 routing-oriented Bounded Tasks，逐 task 建議 model / reasoning effort / tools，並輸出 dependency-aware Dispatch Plan。Jev 可作 per-task assessment backend；不可用時由目前 Agent 依相同 rubric fallback。Skill 不執行 runtime model switching。
+description: 用於新的開發實作、修復、重構、遷移與開發規劃需求，可不具名隱含選用。拆成 Bounded Tasks，建議 model / reasoning effort / tools 並產生 Dispatch Plan；Jev optional，Agent fallback。不用於一般問答、進度查詢或已派送任務的執行／重試；不切換 runtime model。
 ---
 
 # Codex Route Advisor
@@ -20,6 +20,16 @@ User task
 
 Coordinator Agent 負責 worker spawn、execution、retry、integration 與 final validation。
 本 Skill 不實作 Provider / Model Picker / Proxy / transport interception，也不宣稱已切換模型。
+
+## Invocation and continuation
+
+新的開發實作、修復、重構、遷移或開發規劃需求可隱含選用本 Skill，不要求使用者每次具名呼叫。隱含選用由 Host / Coordinator 決定；`enabled` 只控制選用後是否執行 Advisor，不註冊持續 hook，也不保證 Host 每次載入。
+
+- 使用者明確指定的 lifecycle / planning command 優先依下節處理；`enabled=false` 不阻止查詢或修改設定，但開發規劃仍受 enabled gate 控制，具名呼叫不自動重新啟用。
+- 一般問答、進度查詢、批准既有計畫、同一計畫的執行／重試及 Worker 執行已派送的 bounded task，不重新 decomposition、assessment 或建立 Dispatch Plan。既有 trace 仍可記錄 execution evidence。
+- 後續是新開發任務時，重新解析有效設定，再決定是否進入 Normal workflow；Session override 僅限目前對話，不帶入新對話。
+- 需求修正未改變 routing boundary 時沿用既有計畫；若 capability、reasoning、primary tools、dependency、validation 或 risk boundary 改變，對修訂後需求做一次新的主要 planning pass，保留仍有效的完成結果，不做 recursive decomposition。
+- 隱含選用不代表自動執行、delegation 授權或允許向上調度；仍遵守 `executionMode`、`allowModelEscalation` 與使用者授權。
 
 ## Invocation commands
 
@@ -298,6 +308,8 @@ Coordinator 在 delegation / execution 過程必須沿用同一 `runId` 追加�
 ## First-run configuration
 
 `$codex-route-advisor init` 是正式 first-run / reconfigure 入口；其完整行為依 `references/commands.md` 與 `references/operations.md`。
+
+`init` 前置檢查後，第一輪必須簡述有效設定與來源，並依 `commands.md` 的 Guided interaction 提出可直接回答的下一個選項；不得只說「檢查完成，等待設定」。尊重使用者已指定的變更與 scope，不重問已回答的選項。
 
 初始化仍可使用既有：
 - `scripts/configure.mjs`：Global / Workspace / Session preferences；

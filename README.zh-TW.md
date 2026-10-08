@@ -1,547 +1,138 @@
 # Codex Route Advisor
 
-[English](README.md) | [繁體中文](README.zh-TW.md)
+[English](README.md) | 繁體中文
 
-`codex-route-advisor` 是用於 Codex 開發工作的規劃與模型配置顧問（Advisor）。
+為 Codex 開發工作拆解任務、建議模型配置，並產生可執行的派送計畫。
 
-它不會自行攔截執行期請求，也不會自行切換模型。它會先把開發需求拆成適合路由判斷的**有界任務（Bounded Task）**，逐一評估每個任務，建議模型／推理強度／工具配置，再輸出具相依關係的**派送計畫（Dispatch Plan）**，供目前的**協調器（Coordinator）**執行。
+## 用途與功能
 
-```text
-使用者需求
-→ 有界任務（Bounded Task）拆解
-→ 逐任務路由評估（per-task routing assessment）
-→ 模型／推理強度／工具建議
-→ 派送計畫（Dispatch Plan）
-→ 協調器（Coordinator）執行／委派
-```
+- **必要才拆解**：將需求拆成有界任務（Bounded Tasks），局部實作與 focused test 通常維持同一任務。
+- **逐任務配置**：依工作需要建議模型、推理強度與工具，不因單一困難任務升級整個需求。
+- **明確執行關係**：派送計畫（Dispatch Plan）列出相依、可並行與條件式工作。
+- **Jev 選用**：可使用獨立 assessment；不可用或信心不足時由 Agent fallback。
 
-## 快速開始（Quick Start）
+![需求經 Advisor 拆解與配置，再由 Coordinator 執行及驗證](docs/assets/workflow.zh-TW.svg)
 
-### 1. 前置需求
+Advisor 負責規劃；目前的協調器（Coordinator）負責執行、委派、重試與最終驗證。Skill 不切換主聊天模型，也不控制 Provider、Model Picker 或 Proxy。
 
-- 可載入 Workspace Skill 的 Codex 相容 Agent / Coordinator；
-- 可執行內附 `.mjs` scripts 的 Node.js；
-- Jev 為選用能力，不是必要依賴；
-- 若要啟用 Jev 偵測，需在環境中提供 `TYPESAFE_API_KEY`。
+## 安裝
 
-目前 repository **沒有宣告最低 Node.js 版本**，因此 README 不自行假設最低版本。即使沒有 Jev，Codex Route Advisor 仍可透過 Agent fallback 完整運作。
+需要可載入 Skill 的 Codex 環境，以及可執行 `.mjs` 的 Node.js。開發基線為 Node.js 24.x；尚未宣告最低支援版本。Jev 與 API key 均非必要。
 
-### 2. 安裝
-
-將此 repository 的 `skill/` 目錄內容複製到目標 Workspace：
+將套件中的 `skill/` 內容複製至：
 
 ```text
-<workspace>/.agents/skills/codex-route-advisor/
+<project>/.agents/skills/codex-route-advisor/
 ├─ SKILL.md
 ├─ scripts/
 ├─ references/
 └─ examples/
 ```
 
-安裝後的 Skill root 至少必須包含 `SKILL.md`、`scripts/` 與 `references/`。
+README 與 `docs/` 留在套件根目錄，不需複製進 Skill。若要供所有 Project 使用，可安裝至使用者層級的 `~/.agents/skills/codex-route-advisor/`；Windows 的 `~` 為 `%USERPROFILE%`。以實際 Host 的 discovery 設定為準。
 
-### 3. 首次設定
+## 快速開始
 
-建議先使用預設的安全模式：
-
-```json
-{
-  "enabled": true,
-  "executionMode": "confirm",
-  "allowModelEscalation": false,
-  "router": {
-    "backend": "auto",
-    "prefer": "jev"
-  }
-}
-```
-
-設定優先順序固定為：
-
-```text
-Session > Workspace > Global > Skill default
-```
-
-第一次使用時，Skill 應先檢查既有設定、偵測是否具備 Jev credential、在可取得時讀取 runtime model facts，再套用 Session / Workspace / Global preference。初始化階段**不應自動呼叫 Jev live API**。
-
-建議直接使用正式初始化指令：
+**1. 在 Project 的 Codex 對話初始化：**
 
 ```text
 $codex-route-advisor init
 ```
 
-初始化也會詢問是否允許 Advisor 超過 Host picker 目前選定的模型；建議預設選 **No**（`allowModelEscalation=false`）。
+依引導選 Router、profiles、執行模式、向上調度與 scope。建議首次選 Agent assessment、`confirm`、向上調度 No、Workspace。初始化只偵測 Jev credential，不自動做 live 驗證。
 
-若要手動檢查目前設定：
-
-```powershell
-'{"action":"inspect","workspaceRoot":"<workspace>"}' |
-  node .agents\skills\codex-route-advisor\scripts\configure.mjs
-```
-
-如果不想使用 Jev，將 `router.backend` 設為 `model`。若要完全關閉 Advisor，則將 `enabled` 設為 `false`。
-
-### 4. 驗證安裝
-
-先檢查 Jev capability；這個動作**不會發送 live API request**：
-
-```powershell
-node .agents\skills\codex-route-advisor\scripts\detect-jev.mjs
-```
-
-可能回傳：
+**2. 交付真實任務：**
 
 ```text
-configured_unverified
-unavailable
+使用 codex-route-advisor 實作登入 API 與 focused tests。
+先顯示 Dispatch Plan；只有測試失敗時才診斷根因。
 ```
 
-只有在你明確需要驗證 Jev Live capability 時才執行：
+**3. 檢視計畫後同意執行。** Coordinator 按計畫實作並驗證；若 Host 無法使用指定 worker profile，應說明替代方式。一般使用者不需撰寫 bridge JSON。
 
-```powershell
-node .agents\skills\codex-route-advisor\scripts\verify-jev.mjs
-```
+只想先看計畫，可直接使用 `$codex-route-advisor plan <任務>`。
 
-接著執行內附 Advisor smoke test：
+## 隱含啟用與持續呼叫
 
-```powershell
-Get-Content .agents\skills\codex-route-advisor\examples\advisor-mvp.request.json -Raw |
-  node .agents\skills\codex-route-advisor\scripts\advise-task.mjs
-```
+新的實作、修復、重構、遷移與開發規劃需求，可由 Host 依 Skill description 隱含選用 Advisor，無須每次具名呼叫。一般問答、進度查詢、批准／延續既有計畫、重試與 Worker 執行不重新規劃；需求改變 routing boundary 時才重新規劃。
 
-Advisor 啟用且成功時，CLI 會回傳 `state = advised`、已驗證的 Dispatch Plan 與 `trace.runId`。
-
-### 5. 日常使用
-
-一般使用者**不需要手工撰寫**本 README 後面示範的 bridge JSON；正常情況是直接以自然語言要求 Agent 使用 Skill，例如：
+`enabled` 預設 `true`，控制 Skill 被選用後是否執行，不保證 Host 每次自動載入。優先序為 Session > Workspace > Global > Skill default；Session 僅限目前對話，Workspace / Global 持續保存。例如在 Codex 對話輸入：
 
 ```text
-請實作登入 API 與 focused tests。依每個 Bounded Task 選擇適合的模型，
-先顯示 Dispatch Plan；只有驗證失敗時才進一步診斷。
+$codex-route-advisor config enabled=false scope=workspace
+$codex-route-advisor config enabled=true scope=session
 ```
 
-在預設 `executionMode = confirm` 下，預期流程為：
+關閉後在 decomposition 前完整 bypass，不產生 assessment、Dispatch Plan 或 trace；仍可使用 lifecycle commands 查詢與重新設定。`enabled=true` 不等於自動執行，後續仍依 `executionMode` 與授權處理。
+
+若要明確要求 Coordinator 持續呼叫，可將以下提示詞加入專案 `AGENTS.md`，或 Codex home 的全域 `AGENTS.md`（預設 `~/.codex/AGENTS.md`）。使用 Claude 的環境可放入 `CLAUDE.md`，前提是該 Host 會載入此檔案，且已能取得本 Skill；本文未驗證 Claude 的執行相容性。
 
 ```text
-使用者需求
-→ Advisor 建立 Bounded Tasks
-→ Jev 或 Agent 逐 task assessment
-→ Advisor 建議 model / effort / tools
-→ 顯示 Dispatch Plan
-→ 使用者確認
-→ Coordinator 執行／委派
+處理每個新的開發實作、修復、重構、遷移或開發規劃需求前，
+使用已安裝的 codex-route-advisor，先解析有效設定
+（Session > Workspace > Global > Skill default）。
+enabled=false 時維持原生流程，不做 Advisor decomposition、
+assessment、Dispatch Plan 或 trace；enabled=true 時依 Skill 產生計畫，
+再遵守 executionMode、allowModelEscalation 與使用者授權。
+明確 lifecycle / planning commands 優先依 Skill 處理，不自行重新啟用。
+一般問答、進度查詢、批准／延續既有計畫、重試與 Worker 執行
+不重新規劃；需求改變 routing boundary 時才重新規劃。
+Skill 不可用時回報並依使用者指示處理，不宣稱已執行 Advisor。
 ```
 
-正式 Skill 指令：
+這是 Coordinator 的持續指令，不是 runtime hook。新增持續指令後，以新對話驗證 Host 是否載入；若要求每次必定由程式攔截，需要另做 Host 整合。
 
-```text
-$codex-route-advisor init
-$codex-route-advisor config
-$codex-route-advisor status
-$codex-route-advisor reset workspace
-$codex-route-advisor verify
-$codex-route-advisor plan <task>
-```
+## 主要指令
 
-這些是由 Coordinator 處理的 Skill invocation commands，不是另一套 shell CLI；完整語意與安全規則請見 `references/commands.md`。
+以下指令輸入在 Codex 對話中，由 Coordinator 處理。
 
-常用控制：
-
-```text
-暫時完全關閉 Advisor           → enabled = false
-使用 Advisor，但不使用 Jev     → router.backend = model
-優先使用 Jev，失敗時 Agent 回退 → router.backend = auto, router.prefer = jev
-只規劃、不執行                 → executionMode = plan
-確認後執行                     → executionMode = confirm
-允許 Coordinator 直接繼續      → executionMode = auto
-禁止向上模型升級               → allowModelEscalation = false（預設）
-允許向上模型升級               → allowModelEscalation = true
-```
-
-完整設定契約請參考 `references/configuration.md`；安裝、初始化、更新與移除流程請參考 `references/operations.md`。
-
-## 產品邊界（Product Boundary）
-
-本 Skill 是**顧問（Advisor）**，不是執行期路由器（runtime Router）。
-
-它負責：
-
-- 只在能力、推理深度、主要工具、相依順序、驗證方式或風險確實形成獨立路由邊界時，才建立新的有界任務（Bounded Task）；
-- 為不同有界任務（Bounded Task）建議不同路由配置；
-- 保留循序、平行與條件式執行關係；
-- 將 Jev 作為可選的逐任務評估後端，並正式支援代理回退（Agent fallback）；
-- 輸出已驗證的派送計畫（Dispatch Plan）與受限的執行追蹤（execution trace）。
-
-它**不負責** Provider routing、Model Picker 控制、Proxy / gateway transport、host interception，也不自行做 runtime model switching。
-
-Worker 建立、工具呼叫、重試、整合、執行期安全檢查與最終驗證，仍由協調器（Coordinator）負責。
-
-## 動態模型偵測（Dynamic Model Discovery）
-
-Codex Route Advisor 可透過 `codex debug models` 讀取目前 Codex host 實際提供的模型清單，因此新模型出現在環境後，不需要先修改 Skill 程式碼，便能立即被模型 Inventory 發現。
-
-模型「可用性」與「路由能力」刻意分離：
-
-- 新偵測到的模型會立即進入 runtime Inventory；
-- Host 明確提供的 supported reasoning efforts 會保留在 Inventory；
-- exact-id capability registry 只負責 Advisor policy 的 family 與 routing tiers；
-- 若新模型尚無 capability metadata，仍會顯示為 `unclassified`，但 `routable = false`；
-- 後續補上 capability metadata 後，可直接重新分類既有 cache 中的模型，不必再次進行 discovery request。
-
-因此 Advisor 能隨 Codex host 的模型供應變化而調整，同時不會從模型名稱猜測能力，也不會把所有剛出現的新模型直接視為可安全自動路由。
-
-## 可執行顧問流程（Executable Advisor Pipeline）
-
-主要入口：
-
-```text
-scripts/advise-task.mjs
-```
-
-一般使用者仍以自然語言呼叫 Skill。包含 `boundedTasks`、`assessments` 等欄位的 JSON，是 Agent 與 deterministic script 之間的橋接契約（bridge contract），不是要求使用者手工填寫的表單。
-
-```text
-標準化需求
-→ 有界任務（Bounded Task）圖驗證
-→ Jev／代理回退（Agent fallback）路由
-→ 模型／推理強度解析
-→ 派送計畫（Dispatch Plan）
-→ deterministic validation
-```
-
-如果沒有提供語意拆解（semantic decomposition），整個需求會保守維持為單一任務。真正的語意拆解由 Agent 依 `references/bounded-task-decomposition.md` 完成；script 不會使用關鍵字 heuristics 假裝理解任務語意。
-
-## 有界任務規則（Bounded Task Rules）
-
-有界任務（Bounded Task）是「最小需要獨立路由決策的工作單位」。
-
-只有當子任務至少在下列一個面向有實質差異時才拆分：
-
-- 所需能力（capability）；
-- 推理深度（reasoning depth）；
-- 主要工具集合（primary tool set）；
-- 相依順序（dependency ordering）；
-- 驗證方式（validation method）；
-- 風險／影響範圍（risk / blast radius）。
-
-當預期子步驟共用相同路由配置、工具、本地脈絡、驗證循環與相依關卡時，就應停止拆分。
-
-常見情境：
-
-```text
-實作 X
-→ 執行 X 的 focused test
-→ 只有 focused test 失敗時才診斷根因
-```
-
-優先拆成：
-
-```text
-T1 實作 X + 執行 focused test
-T2 診斷失敗根因 — depends on T1，且只有 T1 失敗時執行
-```
-
-**不要只是為了建立條件式關卡，就把實作與同一驗證循環內的 focused test 拆成兩個有界任務（Bounded Task）。** 真正的新路由邊界，是失敗後的根因診斷，而不是 focused verification 本身。
-
-## 平行規劃（Parallel Planning）
-
-完成拆解後，Agent 必須做一次明確的平行安全檢查（parallel-safety pass）。
-
-同一相依前緣（dependency frontier）上的任務，若同時滿足以下條件，應明確列入 `parallelGroups`：
-
-- 任務之間沒有相依關係；
-- 修改不同的 mutable implementation surface；
-- 共用的介面或測試契約已固定；
-- 各自具有獨立驗收條件。
-
-不要只在文字理由中說明「彼此獨立」，卻漏掉安全且可執行的 `parallelGroups`。
-
-執行時，協調器（Coordinator）仍需做最後一次 mutable-state safety check。如果 host 支援 sub-agent delegation，且沒有發現新的衝突，就應並行委派已宣告群組的成員。若決定不使用某個平行群組，應記錄具體衝突或 host capability 限制。
-
-## 路由分類（Routing Taxonomy）
-
-| 分類（Tier） | 預設配置 | 典型用途 |
-| --- | --- | --- |
-| Fast | `gpt-6-luna / high` | 明確、局部、低歧義的實作或 deterministic verification |
-| Balanced | `gpt-6.1-sol / medium` | 一般工程判斷與有限設計選擇 |
-| Strong | `gpt-6.1-sol / xhigh` | 未知根因、competing hypotheses、深度診斷 |
-| Long | `gpt-6-astra / medium` | 廣上下文重構、migration、rollout、跨系統長程推理 |
-
-某一個困難子任務，不會自動把其他 sibling tasks 一起升級。`long` 也不是 `strong` 的一般升級版。
-
-## Jev 與代理回退（Agent Fallback）
-
-Jev 是可選能力，而且只在有界任務（Bounded Task）已形成之後，負責逐任務路由評估。當 effective Router 偏好 Jev 時，Advisor 會自動對每個 task 呼叫 production Jev assessment adapter；呼叫端不需要預先注入 Jev decision。
-
-使用 Jev 的主要價值不是讓 Advisor「才有能力 routing」，而是把 routing judgment 交給專門且獨立的 assessment backend：
-
-- **專門化 routing judgment**：Jev 專注判斷每個 Bounded Task 應落在哪個 capability tier，而不是讓執行任務的 Agent 同時兼任 Router。
-- **降低 self-routing coupling**：routing assessment 與執行 Agent 分離，避免同一個 Agent 同時扮演工作執行者與資源分配判斷者。
-- **提高 policy 一致性**：不同 Coordinator / Agent 可以把 Jev assessment 正規化到同一套 shared routing policy 與 Dispatch Plan contract。
-- **不是硬依賴**：沒有 Jev credential、Jev 呼叫失敗或 confidence 太低時，Agent 仍使用相同 rubric fallback；Advisor 功能不因此中斷。
-
-這些是架構與責任分離上的優點，不代表對所有任務都保證比 Agent fallback 更高的實際判斷準確率。
-
-```text
-Jev 高信心
-→ Jev assessment
-→ 共用 routing policy
-→ recommendation
-
-Jev unavailable / failed / low confidence
-→ 代理回退（Agent fallback）assessment
-→ 同一套 routing policy
-→ recommendation
-```
-
-對外的派送計畫（Dispatch Plan）會暴露 assessment source；若發生 fallback，也會保存原因：
-
-```text
-assessment.source = jev | agent
-assessment.fallback = { from: "jev", reason }   # 只有 Jev 嘗試後 fallback 才出現
-```
-
-正常使用顧問（Advisor）不要求 Jev credential。
-
-## Agent 對 script 的輸入正規化（Authoring Normalization）
-
-Bridge 接受少量 shorthand，以降低 Agent 因型別細節造成不必要的 schema retry：
-
-- top-level `context: "text"` → `{ "summary": "text" }`；
-- top-level `constraints: "text"` → `{ "summary": "text" }`；
-- `boundedTasks[i].context: "text"` → `{ "summary": "text" }`；
-- `boundedTasks[i].acceptance: "criterion"` → `["criterion"]`。
-
-輸出的派送計畫（Dispatch Plan）仍維持 canonical contract：
-
-- task `context` 必須是 object；
-- task `acceptance` 必須是 non-empty string array。
-
-其他 graph、conditional、dependency 與 routing assessment 錯誤仍採嚴格驗證，不做泛化 coercion。
-
-## 範例（Example）
-
-執行 repository 內附的 mixed-tier fixture：
-
-```powershell
-Get-Content skill\examples\advisor-mvp.request.json -Raw |
-  node skill\scripts\advise-task.mjs
-```
-
-也可以直接送出最小 request：
-
-```powershell
-@'
-{
-  "task": "Rename one config field and update its focused test",
-  "routerPreference": { "backend": "model" },
-  "assessments": {
-    "T1": {
-      "agent": {
-        "tier": "balanced",
-        "confidence": 0.9,
-        "reason": "one bounded engineering cycle"
-      },
-      "tools": ["code-edit", "node:test"]
-    }
-  }
-}
-'@ | node scripts/advise-task.mjs
-```
-
-主要輸出為 `plan`：
-
-```text
-version
-taskSummary
-executionMode
-assessmentMode
-executionOrder
-parallelGroups
-tasks[]
-```
-
-每個 plan task 都包含標準化的有界任務（Bounded Task）契約，以及 assessment、recommendation、tools 與 rationale。
-
-## Advisor 開關與三種使用模式
-
-`enabled` 是整個 Codex Route Advisor 的總開關，預設為 `true`。
-
-```text
-Advisor disabled
-→ enabled: false
-→ 完全 bypass Advisor
-→ 不做 decomposition / assessment / recommendation / Dispatch Plan / trace
-
-Advisor with Agent assessment
-→ enabled: true
-→ router.backend: model
-→ Advisor 正常作用，但不使用 Jev
-
-Advisor with Jev-assisted assessment
-→ enabled: true
-→ router.backend: auto（prefer: jev）或 jev
-→ 優先使用 Jev；不可用、失敗或低信心時 fallback 到 Agent
-```
-
-`enabled: false` 與 `executionMode: plan` 不同：`plan` 仍會執行完整 Advisor pipeline，只是在產生 Dispatch Plan 後停止；`enabled: false` 則是在 pipeline 進入 decomposition 前直接 bypass。
-
-完整設定、scope precedence 與 config path 請參考 `references/configuration.md`。
-
-## 執行模式（Execution Mode）
-
-`executionMode` 決定協調器（Coordinator）收到派送計畫（Dispatch Plan）後如何繼續。
-
-| 模式 | 協調器（Coordinator）行為 |
+| 指令 | 用途 |
 | --- | --- |
-| `plan` | 顯示派送計畫（Dispatch Plan）後停止，不執行 |
-| `confirm` | 顯示派送計畫（Dispatch Plan），取得使用者明確同意後才執行；預設值 |
-| `auto` | 顯示簡短計畫後直接進入協調器（Coordinator）執行／委派 |
+| `init` | 引導初始化或更新設定 |
+| `config [changes]` | 檢視有效設定／來源，或修改指定欄位 |
+| `status` | 唯讀檢視 Advisor、Jev 與模型相容性 |
+| `reset [workspace\|global]` | 確認後移除指定 scope 的設定 |
+| `verify [jev-live]` | 本機檢查；明確指定 `jev-live` 才做 live probe |
+| `plan <任務>` | 本次只產生計畫，不執行 |
 
-設定優先順序（preference precedence）：
+每項前加 `$codex-route-advisor`，例如 `$codex-route-advisor status`。完整行為見[操作與排錯](docs/zh_TW/operations.md)。
 
-```text
-Session > Workspace > Global > Skill default (confirm)
-```
+## 模型配置與執行行為
 
-只套用目前 Session：
+| Tier | 預設模型／推理強度 | 適用工作 |
+| --- | --- | --- |
+| Fast | `gpt-6-luna / high` | 明確、局部、低歧義工作 |
+| Balanced | `gpt-6.1-sol / medium` | 一般工程判斷與局部設計 |
+| Strong | `gpt-6.1-sol / xhigh` | 根因未知、假設驗證與深度診斷 |
+| Long | `gpt-6-astra / medium` | 廣上下文、migration、rollout 等長程工作 |
 
-```json
-{
-  "scope": "session",
-  "executionMode": "plan"
-}
-```
+預設 `allowModelEscalation=false`：Host 選定的 Coordinator **model＋effort** 是配置上限。假設選擇 GPT-6.1 Sol / Medium，Fast 可使用 Luna / High；Strong、Long 的 effective profile 會限制為 Sol / Medium，原始 preferred recommendation 仍保留。明確設為 `true` 才允許向上調度。
 
-持久化到 Workspace：
+| 執行模式 | 行為 |
+| --- | --- |
+| `plan` | 產生計畫後停止 |
+| `confirm`（預設） | 顯示計畫，同意後執行 |
+| `auto` | 顯示簡短計畫後直接執行 |
 
-```json
-{
-  "scope": "workspace",
-  "executionMode": "auto"
-}
-```
+推薦配置不代表實際已使用該模型。worker 是否採用指定 model／effort，取決於 Host 能力與可驗證的執行證據；由 Coordinator 本地執行時，使用其目前選定的模型。
 
-顧問（Advisor）script 本身仍不執行 worker。
+## 配置模擬與 Token 預算
 
-## 協調器委派忠實度（Coordinator Delegation Fidelity）
+假設 Coordinator 為 Astra / Medium，規劃產品搜尋功能：API、介面實作與各自的 focused tests → Sol / Medium；API 文件 → Luna / Max（本次 Session 明確覆寫）；跨服務上線／回復規劃 → Astra / Medium。Luna 預設仍為 High，實際使用須由 Host 確認模型與 effort 支援。
 
-協調器（Coordinator）一旦決定把 plan task 委派給 sub-agent，就必須把該 task 的 routing recommendation 視為執行要求，而不是只用來顯示的 metadata。
+![假設 Token 預算：純 Astra 為 100k，混合配置含協調開銷為 85k；非實測](docs/assets/routing-simulation.zh-TW.svg)
 
-1. 若 `recommendation.model` 已是 host 支援的 concrete model id，直接使用。
-2. 若只是 `luna`、`sol`、`astra` 這類抽象 model family token，先解析成目前 host 接受的 concrete model id。
-3. 呼叫 `spawn_agent` 時必須明確傳入：
-   - `model=<resolved concrete model id>`；
-   - `reasoning_effort=<recommendation.effort>`；
-   - 預設 `fork_turns="none"`，只有真的需要有限 parent context 時才使用有限正整數 turn count。
-4. 若 host 對 full-history fork 會繼承 parent profile，就不得用 `fork_turns="all"` 來執行具有 model / effort allocation 的 task。
-5. 非 full-history worker 的 message 必須自包含足夠的有界任務（Bounded Task）脈絡，不能依賴完整 parent conversation。
-6. 若建議配置無法執行，必須記錄 delegation fallback 或不可驗證原因；不得靜默繼承 parent profile，卻宣稱已忠實執行 recommendation。
+**人工假設預算，非實測節省：** 100k 對比 85k，在本例假設下減少 15%。混合總額已包含 Advisor 規劃、交接、整合與驗證；換模型本身不能證明 Token 節省，協調開銷也可能抵銷節省。此數字與 API 費用或訂閱額度分開看待。
 
-## 執行追蹤（Execution Trace）
+完整提示詞、task dependencies、輸入／輸出預算、公式與開銷敏感度見[配置模擬文件](docs/zh_TW/routing-simulation.md)。這是文件示例，未新增自動 Token 估算功能。
 
-Advisor CLI 會在以下位置建立受限的執行追蹤（execution trace）：
+## 詳細文件與回饋
 
-```text
-<workspace>/.codex/codex-route-advisor/runs/<run-id>/
-├─ run.json
-├─ dispatch-plan.json
-└─ events.jsonl
-```
+- [設定說明](docs/zh_TW/configuration.md)：欄位、預設值、設定路徑、優先順序與範例。
+- [操作與排錯](docs/zh_TW/operations.md)：指令流程、Jev、更新／移除、trace 與問題回報。
+- [CHANGELOG](CHANGELOG.md)：新增、修正與使用者可見變更。
+- [Skill 執行規範](skill/SKILL.md)：Agent 實際載入的指令。
 
-協調器（Coordinator）在 delegation / execution 過程沿用同一個 `runId` 記錄 lifecycle events。
+回報時附上 Host／版本、原始 prompt、預期與實際結果，以及去敏感資訊的計畫或 trace；不要提供 API key 或私人程式碼。開發用測試與人工驗證紀錄保留於開發 repository，不隨 Skill 發佈。
 
-保留政策（retention policy）：
-
-- 單一 `events.jsonl` 最大 5 MiB；
-- 所有 runs 總量最大 100 MiB，超限時由最舊資料開始清理到 80 MiB；
-- 保留 14 天；
-- 單一 run 超限時，`run.json.traceStatus` 會變成 `truncated`，critical lifecycle events 仍保留，並以 `droppedEventCount` 記錄省略數量。
-
-本開發 repository 會忽略自己的 runtime trace。Skill 安裝到其他 workspace 後，**不得**只是為了隱藏 `.codex/` 就自動修改 consumer repository 的 `.gitignore`、Git exclude 或其他 VCS 設定。若 consumer workspace 尚未忽略它，可以維持 untracked runtime state；只有使用者明確要求時才修改 ignore 規則。
-
-## 執行期證據邊界（Runtime Evidence Boundary）
-
-Recommendation 代表路由意圖（routing intent），不代表 runtime 已證實使用該配置。
-
-- `requestedModel / requestedEffort` 可以來自派送計畫（Dispatch Plan）；
-- `actualModel / actualEffort / workerId` 只能在 host/runtime 提供可驗證證據時記錄；
-- 不得把 requested 值直接複製成 actual 值，藉此暗示成功 dispatch。
-
-Release acceptance 目前使用 Codex host rollout 的 `turn_context` 驗證 per-worker model / effort。這屬於 **host-observed runtime evidence**，不是獨立的 provider-response metadata。若無法驗證實際 evidence，就必須 fail closed，不得推測 actual values。
-
-## 混合配置範例（Mixed-tier Example）
-
-同一個 request 可以合理產生：
-
-```text
-T1 實作局部修改 + focused test → Fast / gpt-6-luna / high
-T2 診斷失敗根因                  → Strong / gpt-6.1-sol / xhigh
-                                     only if T1 fails
-```
-
-若是不同 implementation surfaces 的獨立工作，也可以：
-
-```text
-T1 實作 helper A → Fast / gpt-6-luna / high
-T2 實作 helper B → Fast / gpt-6-luna / high   （與 T1 平行）
-T3 整合 A + B    → Fast / gpt-6-luna / high   （depends on T1, T2）
-```
-
-## 核心 scripts（Core Scripts）
-
-Advisor v1 正式支援的 runtime surface：
-
-- `scripts/advise-task.mjs` — 可執行的顧問（Advisor）pipeline；
-- `scripts/decompose-task.mjs` — 有界任務（Bounded Task）正規化與 graph checks；
-- `scripts/validate-dispatch-plan.mjs` — deterministic 派送計畫（Dispatch Plan）validator；
-- `scripts/routing.mjs` — Jev／代理回退（Agent fallback）routing primitive；
-- `scripts/resolver.mjs` — 模型／推理強度解析；
-- `scripts/configure.mjs` — preference configuration；
-- `scripts/detect-jev.mjs` / `verify-jev.mjs` — Jev capability lifecycle；
-- `scripts/model-catalog.mjs` / `model-discovery.mjs` — runtime model facts；
-- `scripts/trace.mjs` — 執行追蹤（execution trace）、truncation 與 retention。
-
-名稱為 `spike-*` 的檔案屬於歷史／實驗證據，不是 Advisor v1 正式支援的 runtime surface。
-
-## 安裝（Install）
-
-將 `skill/` 目錄內容安裝為 Skill root：
-
-```text
-<workspace>/.agents/skills/codex-route-advisor/
-├─ SKILL.md
-├─ scripts/
-├─ references/
-└─ examples/
-```
-
-Skill root 必須包含 `SKILL.md`、`scripts/`、`references/`。
-
-安裝後可執行 smoke test：
-
-```powershell
-Get-Content .agents\skills\codex-route-advisor\examples\advisor-mvp.request.json -Raw |
-  node .agents\skills\codex-route-advisor\scripts\advise-task.mjs
-```
-
-成功時 CLI 會回傳 `state = advised`、已驗證的派送計畫（Dispatch Plan）與 `trace.runId`。
-
-## 驗證（Validation）
-
-開發用 regression suite 維護於 repository-level `tests/`，刻意不包含在公開 Skill distribution 內。
-
-## v1 目前限制（Current v1 Limitations）
-
-Advisor v1 刻意維持明確且狹窄的產品邊界：
-
-- 一次主要拆解（primary decomposition pass），不做 recursive decomposition；
-- Jev 不負責決定 task graph；
-- 不提供 persistent task/project-management layer；
-- 不提供 provider-level routing transport 或 proxy；
-- 不保證所有 host 都暴露 per-worker model / effort override 或可驗證的 runtime metadata；
-- 當協調器（Coordinator）能力不可用時，execution 必須退化到目前 Agent 真正能執行的形式，或明確回報 capability gap。
-
-## 授權（License）
-
-MIT — 請參考 repository 根目錄的 `LICENSE`。
+MIT — [LICENSE](LICENSE)。
