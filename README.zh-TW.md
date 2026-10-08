@@ -17,9 +17,25 @@ Advisor 負責規劃；目前的協調器（Coordinator）負責執行、委派�
 
 ## 安裝
 
-需要可載入 Skill 的 Codex 環境，以及可執行 `.mjs` 的 Node.js。開發基線為 Node.js 24.x；尚未宣告最低支援版本。Jev 與 API key 均非必要。
+需要可載入 Skill 的 Agent 環境，以及可執行 `.mjs` 的 Node.js。開發基線為 Node.js 24.x；尚未宣告最低支援版本。Jev 與 API key 均非必要。
 
-將套件中的 `skill/` 內容複製至：
+建議使用 Skills CLI 安裝（需有 Node.js / npm）。在專案目錄執行以下指令，即為專案層級安裝：
+
+**Codex：**
+
+```bash
+npx skills add kenming/codex-route-advisor -a codex -y
+```
+
+**Claude Code：**
+
+```bash
+npx skills add kenming/codex-route-advisor -a claude-code -y
+```
+
+若要安裝至使用者層級，在指令中加上 `-g`。這些指令負責安裝 Skill 檔案，不代表已驗證所有 Claude Code Host 功能或模型調度行為；目前主要驗證目標仍是 Codex。
+
+**手動安裝（備選）：** 將套件中的 `skill/` 內容複製至：
 
 ```text
 <project>/.agents/skills/codex-route-advisor/

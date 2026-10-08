@@ -17,9 +17,25 @@ Advisor owns planning. The active Coordinator owns execution, delegation, retrie
 
 ## Install
 
-Use a Codex environment that loads Skills and Node.js capable of running `.mjs` files. The development baseline is Node.js 24.x; a minimum supported version has not been declared. Jev and an API key are optional.
+Use a Skills-capable agent environment and Node.js capable of running `.mjs` files. The development baseline is Node.js 24.x; a minimum supported version has not been declared. Jev and an API key are optional.
 
-Copy the package's `skill/` contents into:
+Recommended installation with the Skills CLI (requires Node.js / npm). Run from your project directory for a project-level install:
+
+**Codex:**
+
+```bash
+npx skills add kenming/codex-route-advisor -a codex -y
+```
+
+**Claude Code:**
+
+```bash
+npx skills add kenming/codex-route-advisor -a claude-code -y
+```
+
+To install at user scope instead, add `-g`. These commands install the Skill files; they do not establish that every Host feature or model-routing behavior is compatible with Claude Code. Codex is the primary validated target.
+
+**Manual installation (alternative):** Copy the package's `skill/` contents into:
 
 ```text
 <project>/.agents/skills/codex-route-advisor/
