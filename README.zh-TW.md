@@ -27,13 +27,9 @@ Advisor 負責規劃；目前的協調器（Coordinator）負責執行、委派�
 npx skills add kenming/codex-route-advisor -a codex -y
 ```
 
-**Claude Code：**
+**目前僅支援 Codex。** 不支援 Claude Code，請勿使用 `-a claude-code` 安裝目標。
 
-```bash
-npx skills add kenming/codex-route-advisor -a claude-code -y
-```
-
-若要安裝至使用者層級，在指令中加上 `-g`。這些指令負責安裝 Skill 檔案，不代表已驗證所有 Claude Code Host 功能或模型調度行為；目前主要驗證目標仍是 Codex。
+若要安裝至使用者層級，請在 Codex 安裝指令中加上 `-g`。
 
 **手動安裝（備選）：** 將套件中的 `skill/` 內容複製至：
 
@@ -81,7 +77,7 @@ $codex-route-advisor config enabled=true scope=session
 
 關閉後在 decomposition 前完整 bypass，不產生 assessment、Dispatch Plan 或 trace；仍可使用 lifecycle commands 查詢與重新設定。`enabled=true` 不等於自動執行，後續仍依 `executionMode` 與授權處理。
 
-若要明確要求 Coordinator 持續呼叫，可將以下提示詞加入專案 `AGENTS.md`，或 Codex home 的全域 `AGENTS.md`（預設 `~/.codex/AGENTS.md`）。使用 Claude 的環境可放入 `CLAUDE.md`，前提是該 Host 會載入此檔案，且已能取得本 Skill；本文未驗證 Claude 的執行相容性。
+若要明確要求 Codex 的 Coordinator 持續呼叫，可將以下提示詞加入專案 `AGENTS.md`，或 Codex home 的全域 `AGENTS.md`（預設 `~/.codex/AGENTS.md`）。
 
 ```text
 處理每個新的開發實作、修復、重構、遷移或開發規劃需求前，
