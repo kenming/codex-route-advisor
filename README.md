@@ -27,13 +27,9 @@ Recommended installation with the Skills CLI (requires Node.js / npm). Run from 
 npx skills add kenming/codex-route-advisor -a codex -y
 ```
 
-**Claude Code:**
+**Supported Host: Codex only.** Claude Code is not supported; do not use the `-a claude-code` installation target.
 
-```bash
-npx skills add kenming/codex-route-advisor -a claude-code -y
-```
-
-To install at user scope instead, add `-g`. These commands install the Skill files; they do not establish that every Host feature or model-routing behavior is compatible with Claude Code. Codex is the primary validated target.
+To install at user scope instead, add `-g` to the Codex command.
 
 **Manual installation (alternative):** Copy the package's `skill/` contents into:
 
@@ -81,7 +77,7 @@ $codex-route-advisor config enabled=true scope=session
 
 Disabling bypasses Advisor before decomposition and produces no assessment, Dispatch Plan, or trace. Lifecycle commands remain available for inspection and re-enabling. `enabled=true` does not authorize automatic execution; `executionMode` and user authorization still apply.
 
-To explicitly require recurring use, add this instruction to the project's `AGENTS.md` or the global `AGENTS.md` in Codex home (default `~/.codex/AGENTS.md`). For Claude environments, use `CLAUDE.md` only if that Host loads it and can access this Skill; Claude execution compatibility has not been verified here.
+To explicitly require recurring use in Codex, add this instruction to the project's `AGENTS.md` or the global `AGENTS.md` in Codex home (default `~/.codex/AGENTS.md`).
 
 ```text
 Before each new implementation, bug-fix, refactoring, migration, or
